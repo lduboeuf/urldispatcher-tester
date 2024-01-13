@@ -17,6 +17,7 @@
 import QtQuick 2.7
 import Lomiri.Components 1.3
 //import QtQuick.Controls 2.2
+import Lomiri.Components.Popups 1.3 as Popups
 import QtQuick.Layouts 1.3
 import Qt.labs.settings 1.0
 
@@ -30,6 +31,7 @@ MainView {
     height: units.gu(75)
 
     property var history: []
+    property var prefixModel: []
 
     Settings {
         id: settings
@@ -41,7 +43,7 @@ MainView {
     function populateDefaultHistory() {
         var h = ["https://ubports.com",
                  "https://youtube.be/@UBports",
-                 "calendar://startdate=2024-08-18T00:00:00Z",
+                 "calendar:///startdate=2024-08-18T00:00:00Z",
                  "tel://0123456789",
                  "sms://0123456779",
                  "alarm://",
@@ -76,10 +78,11 @@ MainView {
         console.log('prefixes', d)
 
 
-        prefixModel.model = d
+        root.prefixModel = d
     }
 
     Page {
+        id: page
         anchors.fill: parent
 
         header: PageHeader {
@@ -99,33 +102,20 @@ MainView {
 
             RowLayout {
                 Layout.alignment: Qt.AlignLeft | Qt.AlignRight
-                Layout.preferredHeight: prefixSelector.expanded ? prefixSelector.expandedHeight : prefixSelector.collapsedHeight
-                ComboButton {
-
-                    id: prefixSelector
-                    Layout.preferredWidth: units.gu(12)
-                    Layout.alignment: Qt.AlignTop
-                    expandedHeight: collapsedHeight + units.gu(6) * Math.min(prefixModel.count, 4)
-                    comboList:  ListView {
-                        id: prefixModel
-
-                        delegate: ListItem {
-                            height: prefixLayout.height + (divider.visible ? divider.height : 0)
-                            onClicked: {
-                                prefixSelector.text = modelData
-                                textbox.text = modelData
+                Button {
+                    text: i18n.tr("prefix")
+                    onTriggered: {
+                        var dialog = PopupUtils.open(choosePrefixDialog, page, {
+                                        'model': root.prefixModel
+                        });
+                        dialog.selectedPrefix.connect(
+                            function(prefix) {
+                                textbox.text = prefix
                                 textbox.cursorPosition = textbox.text.length
-                                prefixSelector.expanded = false
-                            }
-
-                            ListItemLayout {
-                                id: prefixLayout
-                                title.text: modelData
-
-                            }
-                        }
+                        })
                     }
                 }
+
                 TextField {
                     id: textbox
                     Layout.alignment: Qt.AlignTop
@@ -184,11 +174,56 @@ MainView {
                 }
             }
         }
+
+        Component {
+              id: choosePrefixDialog
+              Popups.Dialog {
+                  id: dialog
+                  property var model
+                  title: i18n.tr("Select a prefix")
+                  modal:true
+
+                  signal selectedPrefix(string prefix)
+
+                  ListView {
+                      id: prefixModel
+                      model: dialog.model
+                      height: childrenRect.height
+                      flickableDirection: ListView.StopAtBounds
+                      delegate: ListItem {
+                          height: prefixLayout.height + (divider.visible ? divider.height : 0)
+                          onClicked: {
+                             dialog.selectedPrefix(modelData)
+                              PopupUtils.close(dialog)
+                          }
+
+                          ListItemLayout {
+                              id: prefixLayout
+                              title.text: modelData
+
+                          }
+                      }
+                  }
+
+                  Connections {
+                      target: __eventGrabber
+                      onPressed: PopupUtils.close(dialog)
+                  }
+              }
+          }
     }
 
     Component.onCompleted: {
         if (root.history.length ===0) {
             root.populateDefaultHistory()
+        } else {
+            // fix calendar url
+            let h = root.history
+            const index = h.findIndex( element => element === "calendar://startdate=2024-08-18T00:00:00Z")
+            if (index !== -1) {
+                h[index] = "calendar:///startdate=2024-08-18T00:00:00Z";
+                root.history = h
+            }
         }
     }
 }

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: urldispatchertest.ldub\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-12 13:25+0000\n"
+"POT-Creation-Date: 2024-01-13 08:28+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,14 +17,22 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../qml/Main.qml:87 urldispatchertest.ldub.desktop.in.h:1
+#: ../qml/Main.qml:90 urldispatchertest.ldub.desktop.in.h:1
 msgid "URL Dispatcher tester"
 msgstr ""
 
-#: ../qml/Main.qml:133
+#: ../qml/Main.qml:106
+msgid "prefix"
+msgstr ""
+
+#: ../qml/Main.qml:123
 msgid "URL (e.g. 'https://ubports.com')"
 msgstr ""
 
-#: ../qml/Main.qml:140
+#: ../qml/Main.qml:130
 msgid "Send URL"
+msgstr ""
+
+#: ../qml/Main.qml:183
+msgid "Select a prefix"
 msgstr ""
