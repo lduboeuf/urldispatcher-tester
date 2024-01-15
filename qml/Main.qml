@@ -100,28 +100,26 @@ MainView {
                 right: parent.right
             }
 
-            RowLayout {
-                Layout.alignment: Qt.AlignLeft | Qt.AlignRight
-                Button {
-                    text: i18n.tr("prefix")
-                    onTriggered: {
-                        var dialog = PopupUtils.open(choosePrefixDialog, page, {
-                                        'model': root.prefixModel
-                        });
-                        dialog.selectedPrefix.connect(
-                            function(prefix) {
-                                textbox.text = prefix
-                                textbox.cursorPosition = textbox.text.length
-                        })
-                    }
+            Button {
+                Layout.alignment: Qt.AlignRight
+                text: i18n.tr("prefix")
+                onTriggered: {
+                    var dialog = PopupUtils.open(choosePrefixDialog, page, {
+                                    'model': root.prefixModel
+                    });
+                    dialog.selectedPrefix.connect(
+                        function(prefix) {
+                            textbox.text = prefix
+                            textbox.cursorPosition = textbox.text.length
+                    })
                 }
+            }
 
-                TextField {
-                    id: textbox
-                    Layout.alignment: Qt.AlignTop
-                    Layout.fillWidth: true
-                    placeholderText: i18n.tr("URL (e.g. 'https://ubports.com')")
-                }
+            TextField {
+                id: textbox
+                Layout.alignment: Qt.AlignTop
+                Layout.fillWidth: true
+                placeholderText: i18n.tr("URL (e.g. 'https://ubports.com')")
             }
 
             Button {

@@ -4,12 +4,12 @@
     "architecture": "@CLICK_ARCH@",
     "title": "URL Dispatcher tester",
     "hooks": {
-        "urldispatchertest.ldub": {
-            "apparmor": "urldispatchertest.ldub.apparmor",
-            "desktop":  "urldispatchertest.ldub.desktop"
+        "urldispatchertest": {
+            "apparmor": "urldispatchertest.apparmor",
+            "desktop":  "urldispatchertest.desktop"
         }
     },
-    "version": "1.1.0",
+    "version": "1.2.0",
     "maintainer": "Lionel Duboeuf <awesomeemail@oulalal.org>",
     "framework" : "@CLICK_FRAMEWORK@"
 }
