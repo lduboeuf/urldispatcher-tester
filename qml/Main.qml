@@ -31,6 +31,7 @@ MainView {
 
     property var history: []
     property var prefixModel: []
+    property string selectedPrefix: ""
     property bool applicationActive: Qt.application.state === Qt.ApplicationActive
 
     Settings {
@@ -38,11 +39,11 @@ MainView {
         property alias history: root.history
     }
 
-    onHistoryChanged: populatePrefixes()
+    onHistoryChanged: populate()
 
 
     function populateDefaultHistory() {
-        var h = ["https://ubports.com",
+        var h = ["http://docs.ubports.com", "https://ubports.com",
                  "https://youtube.be/@UBports",
                  "calendar:///startdate=2024-08-18T00:00:00Z",
                  "tel://0123456789",
@@ -62,28 +63,35 @@ MainView {
         }
     }
 
-    function remove(index) {
+    function remove(url) {
+
         var h = root.history
-        h.splice(index, 1);
+        const idx = h.indexOf(url)
+        if (idx > -1) {
+            h.splice(idx, 1);
+        }
+        h.splice(idx, 1);
         root.history = h
     }
 
-    function populatePrefixes() {
-        const regex = /^([a-z]{2,}:(\/+)?)/g;
-        const defaultPrefixes = ['http://', 'https://']
-        const data = history.map(h => {
-                                     const m = h.match(regex)
-                                     if (m) {
-                                         return m[0]
-                                     }
-                                 })
+    function populate() {
 
-        const d = [...new Set([...defaultPrefixes ,...data])];
-        d.sort()
-        console.log('prefixes', d)
+        let prefixes = []
+        urlModel.clear()
+        history.forEach( h => {
+            const prefix =  h.substr(0, h.indexOf(':'))
+            if (!prefixes.includes(prefix)) {
+                prefixes.push(prefix)
+            }
 
+            urlModel.append({ url: h})
 
-        root.prefixModel = d
+        })
+
+        prefixes.sort()
+        console.log('prefixes', prefixes)
+
+        root.prefixModel = prefixes
     }
 
     function openUrl(url) {
@@ -96,6 +104,24 @@ MainView {
         root.append(url)
 
 
+    }
+
+    ListModel {
+        id: urlModel
+    }
+
+    SortFilterModel {
+        id: filterUrlModel
+        model: urlModel
+        sort {
+            property: "url"
+            order: Qt.AscendingOrder
+        }
+        filter {
+            property: "url"
+            //Add i for case insensitive
+            pattern: new RegExp(root.selectedPrefix, "i")
+        }
     }
 
     Timer {
@@ -117,6 +143,61 @@ MainView {
         header: PageHeader {
             id: header
             title: i18n.tr('URL Dispatcher tester')
+            extension: ActionBar {
+
+                id: actionBar
+                numberOfSlots: 2
+
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    bottom: parent.bottom
+                    leftMargin: units.gu(1)
+                }
+
+                actions: [
+                    Action {
+                        iconName: "next"
+                        text: root.selectedPrefix
+                        visible: root.selectedPrefix.length > 0
+                    },
+                    Action {
+                        iconName: "view-grid-symbolic"
+                        text: i18n.tr("All prefixes")
+                        onTriggered: {
+                            root.selectedPrefix = ""
+                            textbox.text = ""
+                            prefixGrid.forceActiveFocus()
+                        }
+                    }
+                ]
+
+                delegate: AbstractButton {
+                    id: button
+                    action: modelData
+                    width: label.width + icon.width + units.gu(3)
+                    height: parent.height
+                    Rectangle {
+                        color: LomiriColors.slate
+                        opacity: 0.1
+                        anchors.fill: parent
+                        visible: button.pressed
+                    }
+                    Icon {
+                        id: icon
+                        anchors.verticalCenter: parent.verticalCenter
+                        name: action.iconName
+                        width: units.gu(2)
+                    }
+
+                    Label {
+                        anchors.centerIn: parent
+                        anchors.leftMargin: units.gu(2)
+                        id: label
+                        text: action.text
+                    }
+                }
+            }
         }
 
         ColumnLayout {
@@ -127,23 +208,6 @@ MainView {
                 margins: units.gu(2)
                 left: parent.left
                 right: parent.right
-            }
-
-            Button {
-                Layout.alignment: Qt.AlignLeft
-                text: i18n.tr("prefix")
-                onTriggered: {
-                    var dialog = PopupUtils.open(choosePrefixDialog, page, {
-                                                     'model': root.prefixModel
-                                                 });
-                    dialog.selectedPrefix.connect(
-                                function(prefix) {
-                                    textbox.text = prefix
-                                    textbox.cursorPosition = textbox.text.length
-                                    textbox.forceActiveFocus()
-                                })
-                }
-
             }
 
             TextField {
@@ -163,10 +227,58 @@ MainView {
                 enabled: /^([a-z]{2,}:[a-z\/\/]+)/.test(textbox.text)
                 onClicked: openUrl(textbox.text)
             }
+
+            Rectangle {
+                Layout.fillWidth: true
+                height: 1
+                color: LomiriColors.silk
+            }
+        }
+
+        GridLayout {
+            id: prefixGrid
+            visible: root.selectedPrefix.length === 0
+
+            anchors {
+                top: controls.bottom
+                margins: units.gu(2)
+                left: parent.left
+                right: parent.right
+                bottom: parent.bottom
+            }
+
+            columns: 3
+
+            Repeater {
+                model: root.prefixModel
+
+                LomiriShape {
+                    color: mouseArea.pressed ? theme.palette.selected.foreground : theme.palette.normal.foreground
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+
+                    Label {
+                        anchors.centerIn: parent
+                        text: modelData
+                    }
+
+                    MouseArea {
+                        id: mouseArea
+                        anchors.fill: parent
+                        onClicked: {
+                            root.selectedPrefix = modelData + "://"
+                            textbox.text = root.selectedPrefix
+                            textbox.forceActiveFocus()
+                        }
+                    }
+
+                }
+            }
+
         }
 
         ListView {
-
+            visible: root.selectedPrefix.length > 0
             anchors {
                 top: controls.bottom
                 topMargin: units.gu(2)
@@ -176,7 +288,7 @@ MainView {
             }
 
             flickableDirection: ListView.StopAtBounds
-            model: history
+            model: filterUrlModel
             clip: true
             delegate: ListItem {
                 height: itemLayout.height + divider.height
@@ -185,7 +297,7 @@ MainView {
                         Action {
                             iconName: "delete"
                             onTriggered: {
-                                root.remove(index)
+                                root.remove(url)
                             }
                         }
                     ]
@@ -196,8 +308,8 @@ MainView {
                         Action {
                             iconName: "send"
                             onTriggered: {
-                                textbox.text = modelData
-                                Qt.openUrlExternally(modelData)
+                                textbox.text = url
+                                Qt.openUrlExternally(url)
                             }
                         }
                     ]
@@ -205,13 +317,13 @@ MainView {
 
                 ListItemLayout {
                     id: itemLayout
-                    title.text: modelData
+                    title.text: url
 
                     ProgressionSlot { }
                 }
 
                 onClicked: {
-                   // openUrl(modelData)
+                    // openUrl(modelData)
                     textbox.text = modelData
                     textbox.forceActiveFocus()
                     //Qt.openUrlExternally(modelData)
@@ -219,44 +331,6 @@ MainView {
                 }
             }
 
-        }
-
-        Component {
-            id: choosePrefixDialog
-            Popups.Dialog {
-                id: dialog
-                property var model
-                title: i18n.tr("Select a prefix")
-                modal:true
-
-                signal selectedPrefix(string prefix)
-
-                ListView {
-                    id: prefixModel
-                    model: dialog.model
-                    height: childrenRect.height
-                    flickableDirection: ListView.StopAtBounds
-                    delegate: ListItem {
-                        height: prefixLayout.height + (divider.visible ? divider.height : 0)
-                        onClicked: {
-                            dialog.selectedPrefix(modelData)
-                            PopupUtils.close(dialog)
-                        }
-
-                        ListItemLayout {
-                            id: prefixLayout
-                            title.text: modelData
-
-                        }
-
-                    }
-                }
-
-                Connections {
-                    target: __eventGrabber
-                    onPressed: PopupUtils.close(dialog)
-                }
-            }
         }
 
         Component {
