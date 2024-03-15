@@ -16,7 +16,6 @@
 
 import QtQuick 2.7
 import Lomiri.Components 1.3
-//import QtQuick.Controls 2.2
 import Lomiri.Components.Popups 1.3 as Popups
 import QtQuick.Layouts 1.3
 import Qt.labs.settings 1.0
@@ -32,6 +31,7 @@ MainView {
 
     property var history: []
     property var prefixModel: []
+    property bool applicationActive: Qt.application.state === Qt.ApplicationActive
 
     Settings {
         id: settings
@@ -39,6 +39,7 @@ MainView {
     }
 
     onHistoryChanged: populatePrefixes()
+
 
     function populateDefaultHistory() {
         var h = ["https://ubports.com",
@@ -71,14 +72,42 @@ MainView {
         const regex = /^([a-z]{2,}:(\/+)?)/g;
         const defaultPrefixes = ['http://', 'https://']
         const data = history.map(h => {
-          return h.match(regex)[0]
-        })
+                                     const m = h.match(regex)
+                                     if (m) {
+                                         return m[0]
+                                     }
+                                 })
 
         const d = [...new Set([...defaultPrefixes ,...data])];
+        d.sort()
         console.log('prefixes', d)
 
 
         root.prefixModel = d
+    }
+
+    function openUrl(url) {
+        urlSentChecked.restart()
+        console.log("Sending URL: " + url)
+        let res = Qt.openUrlExternally(url)
+        if (!res) {
+            console.log("Sending URL: " + url + " failed")
+        }
+        root.append(url)
+
+
+    }
+
+    Timer {
+        id: urlSentChecked
+        interval: 1000
+
+        onTriggered: {
+            console.log('oulala urlSentChecked', root.applicationActive)
+            if (root.applicationActive) {
+                PopupUtils.open(popoverComponent, sendUrlBtn)
+            }
+        }
     }
 
     Page {
@@ -101,18 +130,20 @@ MainView {
             }
 
             Button {
-                Layout.alignment: Qt.AlignRight
+                Layout.alignment: Qt.AlignLeft
                 text: i18n.tr("prefix")
                 onTriggered: {
                     var dialog = PopupUtils.open(choosePrefixDialog, page, {
-                                    'model': root.prefixModel
-                    });
+                                                     'model': root.prefixModel
+                                                 });
                     dialog.selectedPrefix.connect(
-                        function(prefix) {
-                            textbox.text = prefix
-                            textbox.cursorPosition = textbox.text.length
-                    })
+                                function(prefix) {
+                                    textbox.text = prefix
+                                    textbox.cursorPosition = textbox.text.length
+                                    textbox.forceActiveFocus()
+                                })
                 }
+
             }
 
             TextField {
@@ -120,21 +151,17 @@ MainView {
                 Layout.alignment: Qt.AlignTop
                 Layout.fillWidth: true
                 placeholderText: i18n.tr("URL (e.g. 'https://ubports.com')")
+                inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
+
             }
 
             Button {
+                id: sendUrlBtn
                 Layout.fillWidth: true
-
+                color: theme.palette.normal.positive
                 text: i18n.tr("Send URL")
                 enabled: /^([a-z]{2,}:[a-z\/\/]+)/.test(textbox.text)
-                onClicked: {
-                    console.log("Sending URL: " + textbox.text)
-                    let res = Qt.openUrlExternally(textbox.text)
-                    if (!res) {
-                        console.log("Sending URL: " + textbox.text + " failed")
-                    }
-                    root.append(textbox.text)
-                }
+                onClicked: openUrl(textbox.text)
             }
         }
 
@@ -163,52 +190,110 @@ MainView {
                         }
                     ]
                 }
+
+                trailingActions: ListItemActions {
+                    actions: [
+                        Action {
+                            iconName: "send"
+                            onTriggered: {
+                                textbox.text = modelData
+                                Qt.openUrlExternally(modelData)
+                            }
+                        }
+                    ]
+                }
+
                 ListItemLayout {
                     id: itemLayout
                     title.text: modelData
+
+                    ProgressionSlot { }
                 }
+
                 onClicked: {
+                   // openUrl(modelData)
                     textbox.text = modelData
+                    textbox.forceActiveFocus()
+                    //Qt.openUrlExternally(modelData)
+
+                }
+            }
+
+        }
+
+        Component {
+            id: choosePrefixDialog
+            Popups.Dialog {
+                id: dialog
+                property var model
+                title: i18n.tr("Select a prefix")
+                modal:true
+
+                signal selectedPrefix(string prefix)
+
+                ListView {
+                    id: prefixModel
+                    model: dialog.model
+                    height: childrenRect.height
+                    flickableDirection: ListView.StopAtBounds
+                    delegate: ListItem {
+                        height: prefixLayout.height + (divider.visible ? divider.height : 0)
+                        onClicked: {
+                            dialog.selectedPrefix(modelData)
+                            PopupUtils.close(dialog)
+                        }
+
+                        ListItemLayout {
+                            id: prefixLayout
+                            title.text: modelData
+
+                        }
+
+                    }
+                }
+
+                Connections {
+                    target: __eventGrabber
+                    onPressed: PopupUtils.close(dialog)
                 }
             }
         }
 
         Component {
-              id: choosePrefixDialog
-              Popups.Dialog {
-                  id: dialog
-                  property var model
-                  title: i18n.tr("Select a prefix")
-                  modal:true
+            id: popoverComponent
 
-                  signal selectedPrefix(string prefix)
+            Popups.Dialog {
+                id: popover
+                Column {
+                    id: containerLayout
+                    anchors {
+                        left: parent.left
+                        top: parent.top
+                        right: parent.right
+                    }
+                    Label {
+                        anchors.left: parent.left
+                        anchors.right: parent.right
 
-                  ListView {
-                      id: prefixModel
-                      model: dialog.model
-                      height: childrenRect.height
-                      flickableDirection: ListView.StopAtBounds
-                      delegate: ListItem {
-                          height: prefixLayout.height + (divider.visible ? divider.height : 0)
-                          onClicked: {
-                             dialog.selectedPrefix(modelData)
-                              PopupUtils.close(dialog)
-                          }
+                        fontSize: "medium"
+                        wrapMode: Label.WordWrap
+                        text: i18n.tr("If nothing happens, this url scheme might not be supported, check `lomiri-url-dispatcher-dump` in terminal for a complete list of registered url scheme")
+                    }
+                }
 
-                          ListItemLayout {
-                              id: prefixLayout
-                              title.text: modelData
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: PopupUtils.close(popover)
+                }
 
-                          }
-                      }
-                  }
+                Connections {
+                    target: __eventGrabber
+                    onPressed: PopupUtils.close(popover)
+                }
 
-                  Connections {
-                      target: __eventGrabber
-                      onPressed: PopupUtils.close(dialog)
-                  }
-              }
-          }
+            }
+        }
+
     }
 
     Component.onCompleted: {
@@ -224,4 +309,5 @@ MainView {
             }
         }
     }
+
 }

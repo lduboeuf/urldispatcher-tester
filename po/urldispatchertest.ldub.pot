@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: urldispatchertest.ldub\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-15 13:41+0000\n"
+"POT-Creation-Date: 2024-03-15 12:06+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,22 +17,28 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../qml/Main.qml:90 urldispatchertest.desktop.in.h:1
+#: ../qml/Main.qml:119 urldispatchertest.desktop.in.h:1
 msgid "URL Dispatcher tester"
 msgstr ""
 
-#: ../qml/Main.qml:105
+#: ../qml/Main.qml:134
 msgid "prefix"
 msgstr ""
 
-#: ../qml/Main.qml:138
+#: ../qml/Main.qml:153
 msgid "URL (e.g. 'https://ubports.com')"
 msgstr ""
 
-#: ../qml/Main.qml:145
+#: ../qml/Main.qml:162
 msgid "Send URL"
 msgstr ""
 
-#: ../qml/Main.qml:198
+#: ../qml/Main.qml:229
 msgid "Select a prefix"
+msgstr ""
+
+#: ../qml/Main.qml:280
+msgid ""
+"If nothing happens, this url scheme might not be supported, check `lomiri-"
+"url-dispatcher-dump` in terminal for a complete list of registered url scheme"
 msgstr ""
