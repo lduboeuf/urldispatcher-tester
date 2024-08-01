@@ -46,8 +46,9 @@ MainView {
         var h = ["http://docs.ubports.com", "https://ubports.com",
                  "https://youtube.be/@UBports",
                  "calendar:///startdate=2024-08-18T00:00:00Z",
-                 "tel://0123456789",
-                 "sms://0123456779",
+                 "tel:0123456789",
+                 "sms:0123456779",
+                 "sms:911",
                  "alarm://",
                  "weather://"]
         root.history = h
@@ -101,7 +102,7 @@ MainView {
         if (!res) {
             console.log("Sending URL: " + url + " failed")
         }
-        root.append(url)
+        //root.append(url)
 
 
     }
@@ -132,6 +133,8 @@ MainView {
             console.log('oulala urlSentChecked', root.applicationActive)
             if (root.applicationActive) {
                 PopupUtils.open(popoverComponent, sendUrlBtn)
+            } else {
+                root.append(textbox.text)
             }
         }
     }
@@ -224,7 +227,7 @@ MainView {
                 Layout.fillWidth: true
                 color: theme.palette.normal.positive
                 text: i18n.tr("Send URL")
-                enabled: /^([a-z]{2,}:[a-z\/\/]+)/.test(textbox.text)
+                enabled: /^([a-z]{2,}:[a-z0-9\/\/]+)/.test(textbox.text)
                 onClicked: openUrl(textbox.text)
             }
 
@@ -266,7 +269,7 @@ MainView {
                         id: mouseArea
                         anchors.fill: parent
                         onClicked: {
-                            root.selectedPrefix = modelData + "://"
+                            root.selectedPrefix = modelData + ":"
                             textbox.text = root.selectedPrefix
                             textbox.forceActiveFocus()
                         }
